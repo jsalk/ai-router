@@ -47,22 +47,22 @@ func checkAllHealth(config *Config) HealthResults {
 // Prefers chosen; falls back through config.FallbackBackends in order (skipping chosen).
 // If no backend is available, prints a diagnostic to stderr listing each backend's
 // status and calls os.Exit(1).
+// Health is checked once upfront via checkAllHealth to avoid redundant network
+// calls in the failure diagnostic path (WR-01).
 func selectAvailableBackend(chosen string, config *Config) string {
-	if b, ok := config.Backends[chosen]; ok && checkHealth(b) {
+	results := checkAllHealth(config)
+
+	if results[chosen] {
 		return chosen
 	}
 
 	for _, name := range config.FallbackBackends {
-		if name == chosen {
-			continue
-		}
-		if b, ok := config.Backends[name]; ok && checkHealth(b) {
+		if name != chosen && results[name] {
 			return name
 		}
 	}
 
 	// No backends available — print diagnostic and exit.
-	results := checkAllHealth(config)
 	fmt.Fprintf(os.Stderr, "error: no backends available\n")
 	for name, up := range results {
 		status := "up"
