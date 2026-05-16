@@ -1,0 +1,7 @@
+backends:
+  cc:
+    command: claude
+    set_env: {key: value
+    # missing closing brace — invalid YAML
+  bad_indent:
+	tabbed: value

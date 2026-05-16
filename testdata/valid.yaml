@@ -1,0 +1,99 @@
+backends:
+  cc:
+    command: claude
+    unset_env:
+      - ANTHROPIC_BASE_URL
+      - ANTHROPIC_AUTH_TOKEN
+      - OLLAMA_MODEL
+    health_check_type: env_var
+    health_check_value: ANTHROPIC_API_KEY
+    description: "Cloud Claude via Anthropic API"
+
+  cl:
+    command: ollama
+    args:
+      - run
+      - qwen3-code
+    health_check_type: http
+    health_check_value: http://localhost:11434/
+    description: "Local Ollama qwen3-code"
+
+  claude-ollama-cloud:
+    command: claude
+    args:
+      - --model
+      - "qwen3.5:cloud"
+    set_env:
+      ANTHROPIC_BASE_URL: http://localhost:11434
+      ANTHROPIC_AUTH_TOKEN: ollama
+    unset_env:
+      - ANTHROPIC_API_KEY
+    health_check_type: http
+    health_check_value: http://localhost:11434/
+    description: "Claude via Ollama Cloud Pro (qwen3.5:cloud)"
+
+  perplexity:
+    command: xdg-open
+    url_template: "https://www.perplexity.ai/search?q={prompt}"
+    health_check_type: env_var
+    health_check_value: PERPLEXITY_API_KEY
+    description: "Perplexity web search via browser"
+
+  gemini:
+    command: xdg-open
+    url_template: "https://gemini.google.com/app?q={prompt}"
+    health_check_type: env_var
+    health_check_value: GEMINI_API_KEY
+    description: "Google Gemini via browser"
+
+routing_rules:
+  - keywords:
+      - search
+      - news
+      - today
+      - current
+      - latest
+      - weather
+      - price
+      - stock
+      - "who won"
+    backend: perplexity
+    priority: 1
+
+  - keywords:
+      - private
+      - local
+      - offline
+      - sensitive
+      - secret
+      - confidential
+      - internal
+    backend: cl
+    priority: 2
+
+  - keywords:
+      - code
+      - debug
+      - implement
+      - refactor
+      - test
+      - architecture
+      - review
+      - explain
+    backend: cc
+    priority: 3
+
+  - keywords:
+      - document
+      - pdf
+      - summarize
+      - transcript
+      - paper
+      - report
+    backend: gemini
+    priority: 4
+
+default_backend: cl
+fallback_backends:
+  - cl
+  - cc
