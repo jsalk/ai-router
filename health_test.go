@@ -38,8 +38,12 @@ func TestCheckHealthHTTPFailure(t *testing.T) {
 // TestCheckHealthHTTPTimeout verifies the 3-second timeout is enforced for slow HTTP backends.
 func TestCheckHealthHTTPTimeout(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(5 * time.Second)
-		w.WriteHeader(http.StatusOK)
+		// Use request context so the handler exits quickly when the client disconnects.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+			w.WriteHeader(http.StatusOK)
+		}
 	}))
 	defer srv.Close()
 
