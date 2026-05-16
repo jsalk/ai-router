@@ -44,7 +44,7 @@ func setupEnv(backend Backend) []string {
 func buildCommand(backend Backend, prompt string) (string, []string) {
 	if backend.URLTemplate != "" {
 		encoded := url.QueryEscape(prompt)
-		u := strings.Replace(backend.URLTemplate, "{prompt}", encoded, 1)
+		u := strings.ReplaceAll(backend.URLTemplate, "{prompt}", encoded)
 		return "xdg-open", []string{u}
 	}
 	args := append(append([]string{}, backend.Args...), prompt)

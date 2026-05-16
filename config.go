@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -63,13 +65,31 @@ func loadConfig(path string) (*Config, error) {
 	return &config, nil
 }
 
+// validateURLTemplate checks that a URL template has an http or https scheme (CR-04).
+func validateURLTemplate(tmpl string) error {
+	parsed, err := url.Parse(strings.Replace(tmpl, "{prompt}", "x", -1))
+	if err != nil {
+		return fmt.Errorf("invalid url_template: %w", err)
+	}
+	if parsed.Scheme != "https" && parsed.Scheme != "http" {
+		return fmt.Errorf("url_template scheme must be http or https, got %q", parsed.Scheme)
+	}
+	return nil
+}
+
 // validateConfig checks that all routing rules and the default backend reference
-// defined backends, and that every backend has a non-empty command.
+// defined backends, and that every backend has a non-empty command or url_template.
 func validateConfig(c *Config) error {
-	// Check every backend has a command field.
+	// Check every backend has a command (when url_template is not set) and
+	// validate any url_template scheme (CR-04, WR-04).
 	for name, backend := range c.Backends {
-		if backend.Command == "" {
-			return fmt.Errorf("backend %q: missing command field", name)
+		if backend.URLTemplate == "" && backend.Command == "" {
+			return fmt.Errorf("backend %q: missing command field (required when url_template is not set)", name)
+		}
+		if backend.URLTemplate != "" {
+			if err := validateURLTemplate(backend.URLTemplate); err != nil {
+				return fmt.Errorf("backend %q: %w", name, err)
+			}
 		}
 	}
 
