@@ -17,12 +17,13 @@ func main() {
 	}
 
 	verbose := flag.Bool("v", false, "print routing decision to stderr")
+	dryRun := flag.Bool("dry-run", false, "print routing decision to stderr and exit without dispatching")
 	configPath := flag.String("config", cfgDefault, "path to config.yaml")
 	flag.Parse()
 
 	// Require at least one positional argument (the prompt).
 	if flag.NArg() == 0 {
-		fmt.Fprintf(os.Stderr, "usage: ai-router [-v] [--config path] <prompt>\n")
+		fmt.Fprintf(os.Stderr, "usage: ai-router [-v] [--dry-run] [--config path] <prompt>\n")
 		os.Exit(1)
 	}
 
@@ -56,7 +57,7 @@ func main() {
 
 	// Verbose output to stderr (stdout stays clean for scripting, per D-15).
 	// Security: never print env var values — only backend names and health booleans (T-04-14).
-	if *verbose {
+	if *verbose || *dryRun {
 		fmt.Fprintf(os.Stderr, "ai: routing to %s (matched keyword: %s)\n", backendName, matchedKeyword)
 		results := checkAllHealth(config)
 
@@ -72,6 +73,11 @@ func main() {
 			parts = append(parts, fmt.Sprintf("%s=%v", name, results[name]))
 		}
 		fmt.Fprintf(os.Stderr, "ai: health: %s\n", strings.Join(parts, ", "))
+	}
+
+	// Dry-run: print routing decision and exit without dispatching (WR-05).
+	if *dryRun {
+		os.Exit(0)
 	}
 
 	// Build command and dispatch (T-04-13: exec.Command, NOT sh -c to prevent shell injection).
