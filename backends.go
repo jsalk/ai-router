@@ -3,6 +3,7 @@ package main
 import (
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -31,8 +32,14 @@ func setupEnv(backend Backend) []string {
 	for _, key := range backend.UnsetEnv {
 		env = removeEnvVar(env, key)
 	}
-	for key, val := range backend.SetEnv {
-		env = setEnvVar(env, key, val)
+	// Sort keys for deterministic iteration order (WR-03).
+	setEnvKeys := make([]string, 0, len(backend.SetEnv))
+	for k := range backend.SetEnv {
+		setEnvKeys = append(setEnvKeys, k)
+	}
+	sort.Strings(setEnvKeys)
+	for _, key := range setEnvKeys {
+		env = setEnvVar(env, key, backend.SetEnv[key])
 	}
 	return env
 }
