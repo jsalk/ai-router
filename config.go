@@ -38,8 +38,13 @@ type RoutingRule struct {
 }
 
 // defaultConfigPath returns the canonical location for the ai-router config file.
-func defaultConfigPath() string {
-	return filepath.Join(os.Getenv("HOME"), ".config", "ai-router", "config.yaml")
+// Returns an error when the home directory cannot be determined (WR-02).
+func defaultConfigPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine home directory: %w", err)
+	}
+	return filepath.Join(home, ".config", "ai-router", "config.yaml"), nil
 }
 
 // loadConfig reads and unmarshals the YAML config file at path.

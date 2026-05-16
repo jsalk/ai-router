@@ -10,8 +10,14 @@ import (
 )
 
 func main() {
+	cfgDefault, err := defaultConfigPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
 	verbose := flag.Bool("v", false, "print routing decision to stderr")
-	configPath := flag.String("config", defaultConfigPath(), "path to config.yaml")
+	configPath := flag.String("config", cfgDefault, "path to config.yaml")
 	flag.Parse()
 
 	// Require at least one positional argument (the prompt).
