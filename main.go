@@ -33,6 +33,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Sort routing rules by priority ascending so lower numbers win (CR-01).
+	sort.Slice(config.RoutingRules, func(i, j int) bool {
+		return config.RoutingRules[i].Priority < config.RoutingRules[j].Priority
+	})
+
 	// Keyword routing — returns ("", "") when no rule matches.
 	backendName, matchedKeyword := routeByKeyword(prompt, config.RoutingRules)
 	if backendName == "" {
