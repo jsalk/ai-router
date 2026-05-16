@@ -33,14 +33,12 @@ backends:
     description: "Claude via Ollama Cloud Pro (qwen3.5:cloud)"
 
   perplexity:
-    command: xdg-open
     url_template: "https://www.perplexity.ai/search?q={prompt}"
     health_check_type: env_var
     health_check_value: PERPLEXITY_API_KEY
     description: "Perplexity web search via browser"
 
   gemini:
-    command: xdg-open
     url_template: "https://gemini.google.com/app?q={prompt}"
     health_check_type: env_var
     health_check_value: GEMINI_API_KEY
