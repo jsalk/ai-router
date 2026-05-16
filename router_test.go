@@ -50,12 +50,14 @@ func TestRouteByKeywordPrivacy(t *testing.T) {
 
 func TestRouteByKeywordGemini(t *testing.T) {
 	rules := testRules()
+	// "summarize this pdf" — gemini rule keywords are [document, pdf, summarize, ...].
+	// "pdf" appears before "summarize" in the keyword list, so "pdf" is the matched keyword.
 	backend, kw := routeByKeyword("summarize this pdf", rules)
 	if backend != "gemini" {
 		t.Errorf("expected backend=gemini, got %q", backend)
 	}
-	if kw != "summarize" {
-		t.Errorf("expected keyword=summarize, got %q", kw)
+	if kw != "pdf" {
+		t.Errorf("expected keyword=pdf (first match in gemini keyword list), got %q", kw)
 	}
 }
 
@@ -69,23 +71,14 @@ func TestRouteByKeywordCaseInsensitive(t *testing.T) {
 		t.Errorf("expected keyword=implement (lowercase), got %q", kw)
 	}
 
-	// Also test CODE
+	// Also test CODE — cc rule has priority 3; perplexity/cl rules don't contain "code"/"review".
+	// "code" keyword in the cc rule matches "CODE review" case-insensitively.
 	backend2, kw2 := routeByKeyword("CODE review", rules)
-	if backend2 != "perplexity" {
-		// "review" is a cc keyword but "CODE" is also cc; "code" matches cc at priority 3
-		// However "CODE review" — "review" is cc too; first match in keywords list for cc is "code"
-		// but wait: perplexity has priority 1 and doesn't have "code"/"review"
-		// cl has priority 2 — doesn't match
-		// cc has priority 3 — "code" keyword matches "CODE review" case-insensitively
-		t.Logf("backend2=%q kw2=%q", backend2, kw2)
+	if backend2 != "cc" {
+		t.Errorf("expected backend=cc for 'CODE review', got %q", backend2)
 	}
-	_ = kw2
-	backend3, kw3 := routeByKeyword("CODE review", rules)
-	if backend3 != "cc" {
-		t.Errorf("expected backend=cc for 'CODE review', got %q", backend3)
-	}
-	if kw3 != "code" {
-		t.Errorf("expected keyword=code for 'CODE review', got %q", kw3)
+	if kw2 != "code" {
+		t.Errorf("expected keyword=code for 'CODE review', got %q", kw2)
 	}
 }
 
