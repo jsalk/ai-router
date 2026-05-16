@@ -80,9 +80,19 @@ func validateConfig(c *Config) error {
 		}
 	}
 
-	// Check default_backend is defined.
+	// Check default_backend is explicitly set and defined (CR-02).
+	if c.DefaultBackend == "" {
+		return fmt.Errorf("default_backend is required but not set")
+	}
 	if _, ok := c.Backends[c.DefaultBackend]; !ok {
 		return fmt.Errorf("default_backend %q is not defined in backends", c.DefaultBackend)
+	}
+
+	// Validate fallback_backends entries against defined backends (CR-02).
+	for i, name := range c.FallbackBackends {
+		if _, ok := c.Backends[name]; !ok {
+			return fmt.Errorf("fallback_backends[%d] %q is not defined in backends", i, name)
+		}
 	}
 
 	return nil
