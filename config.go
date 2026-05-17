@@ -10,6 +10,27 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Cost tier constants — valid values for Backend.CostTier (D-04).
+const (
+	CostFree   = "free"
+	CostLow    = "low"
+	CostMedium = "medium"
+	CostHigh   = "high"
+
+	LatencyInstant = "instant"
+	LatencyFast    = "fast"
+	LatencyMedium  = "medium"
+	LatencySlow    = "slow"
+)
+
+var validCostTiers = map[string]bool{
+	CostFree: true, CostLow: true, CostMedium: true, CostHigh: true,
+}
+
+var validLatencyTiers = map[string]bool{
+	LatencyInstant: true, LatencyFast: true, LatencyMedium: true, LatencySlow: true,
+}
+
 // Config is the top-level configuration for ai-router.
 type Config struct {
 	Backends         map[string]Backend `yaml:"backends"`
@@ -28,6 +49,8 @@ type Backend struct {
 	HealthCheckType  string            `yaml:"health_check_type"`
 	HealthCheckValue string            `yaml:"health_check_value"`
 	Description      string            `yaml:"description"`
+	CostTier         string            `yaml:"cost_tier"`    // optional; one of: free, low, medium, high
+	LatencyTier      string            `yaml:"latency_tier"` // optional; one of: instant, fast, medium, slow
 }
 
 // RoutingRule maps a set of keywords to a backend with a given priority.
@@ -117,6 +140,17 @@ func validateConfig(c *Config) error {
 	for i, name := range c.FallbackBackends {
 		if _, ok := c.Backends[name]; !ok {
 			return fmt.Errorf("fallback_backends[%d] %q is not defined in backends", i, name)
+		}
+	}
+
+	// Validate optional cost_tier and latency_tier fields (T-05-02-01).
+	// Empty values are allowed (D-06: graceful degradation).
+	for name, backend := range c.Backends {
+		if backend.CostTier != "" && !validCostTiers[backend.CostTier] {
+			return fmt.Errorf("backend %q: invalid cost_tier %q (must be one of: free, low, medium, high)", name, backend.CostTier)
+		}
+		if backend.LatencyTier != "" && !validLatencyTiers[backend.LatencyTier] {
+			return fmt.Errorf("backend %q: invalid latency_tier %q (must be one of: instant, fast, medium, slow)", name, backend.LatencyTier)
 		}
 	}
 
