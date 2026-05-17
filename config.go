@@ -37,6 +37,7 @@ type Config struct {
 	RoutingRules     []RoutingRule      `yaml:"routing_rules"`
 	DefaultBackend   string             `yaml:"default_backend"`
 	FallbackBackends []string           `yaml:"fallback_backends"`
+	PrivateKeywords  []string           `yaml:"private_keywords"`
 }
 
 // Backend defines how to invoke and health-check a single AI backend.

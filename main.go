@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -18,12 +19,13 @@ func main() {
 
 	verbose := flag.Bool("v", false, "print routing decision to stderr")
 	dryRun := flag.Bool("dry-run", false, "print routing decision to stderr and exit without dispatching")
+	pick := flag.Bool("pick", false, "interactively select backend via fzf before dispatch")
 	configPath := flag.String("config", cfgDefault, "path to config.yaml")
 	flag.Parse()
 
 	// Require at least one positional argument (the prompt).
 	if flag.NArg() == 0 {
-		fmt.Fprintf(os.Stderr, "usage: ai-router [-v] [--dry-run] [--config path] <prompt>\n")
+		fmt.Fprintf(os.Stderr, "usage: ai-router [-v] [--dry-run] [--pick] [--config path] <prompt>\n")
 		os.Exit(1)
 	}
 
@@ -55,10 +57,39 @@ func main() {
 	// Health check + fallback selection (calls os.Exit(1) internally if none available).
 	backendName = selectAvailableBackend(backendName, config)
 
+	// --pick: interactive fzf backend selector overrides auto-routed backendName.
+	if *pick {
+		healthResults := checkAllHealth(config)
+		selected, err := fzfPicker(config, healthResults)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: picker failed: %v\n", err)
+			os.Exit(1)
+		}
+		// Guard: selected name must be a valid Config.Backends key (T-05-05-01).
+		if _, ok := config.Backends[selected]; !ok {
+			fmt.Fprintf(os.Stderr, "error: selected backend %q not found in config\n", selected)
+			os.Exit(1)
+		}
+		backendName = selected
+	}
+
 	// Verbose output to stderr (stdout stays clean for scripting, per D-15).
 	// Security: never print env var values — only backend names and health booleans (T-04-14).
 	if *verbose || *dryRun {
-		fmt.Fprintf(os.Stderr, "ai: routing to %s (matched keyword: %s)\n", backendName, matchedKeyword)
+		verboseBackend := config.Backends[backendName]
+		verboseLine := fmt.Sprintf("ai: routing to %s (matched keyword: %s)", backendName, matchedKeyword)
+		var tierParts []string
+		if verboseBackend.CostTier != "" {
+			tierParts = append(tierParts, fmt.Sprintf("cost=%s", verboseBackend.CostTier))
+		}
+		if verboseBackend.LatencyTier != "" {
+			tierParts = append(tierParts, fmt.Sprintf("latency=%s", verboseBackend.LatencyTier))
+		}
+		if len(tierParts) > 0 {
+			verboseLine += " | " + strings.Join(tierParts, " ")
+		}
+		fmt.Fprintf(os.Stderr, "%s\n", verboseLine)
+
 		results := checkAllHealth(config)
 
 		// Sort names for deterministic output.
@@ -73,6 +104,17 @@ func main() {
 			parts = append(parts, fmt.Sprintf("%s=%v", name, results[name]))
 		}
 		fmt.Fprintf(os.Stderr, "ai: health: %s\n", strings.Join(parts, ", "))
+	}
+
+	// Log dispatch decision (including dry-run — log the decision even without executing, per D-07).
+	// Non-fatal: a log failure prints a warning but does not block dispatch (T-05-05-05).
+	if err := logDispatch(HistoryEntry{
+		Timestamp:       time.Now(),
+		PromptText:      prompt,
+		Backend:         backendName,
+		PrivateKeywords: config.PrivateKeywords,
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to log history: %v\n", err)
 	}
 
 	// Dry-run: print routing decision and exit without dispatching (WR-05).
