@@ -1,0 +1,8 @@
+# compiled binary
+ai-router
+
+# Go build artifacts
+*.exe
+*.test
+*.out
+/vendor/
