@@ -1,34 +1,31 @@
 package main
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
 
 // TestPickerNoHealthyBackends verifies fzfPicker returns an error when no backends are healthy.
-// RED gate: remove t.Skip and confirm failure after Wave 2 implements fzfPicker.
 func TestPickerNoHealthyBackends(t *testing.T) {
-	t.Skip("skipping until picker.go exists — RED gate: will remove skip and confirm fail after Wave 2 implements fzfPicker")
-
-	// Uncomment after picker.go exists:
-	// config := &Config{
-	// 	Backends: map[string]Backend{
-	// 		"cc": {Command: "claude", Description: "Cloud Claude"},
-	// 		"cl": {Command: "ollama", Description: "Local Ollama"},
-	// 	},
-	// 	DefaultBackend: "cl",
-	// }
-	// healthyResults := map[string]bool{
-	// 	"cc": false,
-	// 	"cl": false,
-	// }
-	// _, err := fzfPicker(config, healthyResults)
-	// if err == nil {
-	// 	t.Fatal("expected error when no backends are healthy, got nil")
-	// }
-	// if !strings.Contains(err.Error(), "no healthy backends") {
-	// 	t.Errorf("expected error to contain 'no healthy backends', got: %v", err)
-	// }
+	config := &Config{
+		Backends: map[string]Backend{
+			"cc": {Command: "claude", Description: "Cloud Claude"},
+			"cl": {Command: "ollama", Description: "Local Ollama"},
+		},
+		DefaultBackend: "cl",
+	}
+	healthyResults := map[string]bool{
+		"cc": false,
+		"cl": false,
+	}
+	_, err := fzfPicker(config, healthyResults)
+	if err == nil {
+		t.Fatal("expected error when no backends are healthy, got nil")
+	}
+	if !strings.Contains(err.Error(), "no healthy backends") {
+		t.Errorf("expected error to contain 'no healthy backends', got: %v", err)
+	}
 }
 
 // TestPickerFzfNotFound is a compile stub only.
@@ -75,20 +72,13 @@ func TestPickerHealthFilter(t *testing.T) {
 }
 
 // TestIsNotFound verifies isNotFound helper detects "command not found" errors.
-// RED gate: remove t.Skip after Wave 2 implements isNotFound in picker.go.
 func TestIsNotFound(t *testing.T) {
-	t.Skip("skipping until picker.go exists — RED gate: will remove skip and confirm after Wave 2 implements isNotFound")
-
-	// Uncomment after picker.go exists:
-	// cmdNotFoundErr := errors.New("command not found")
-	// if !isNotFound(cmdNotFoundErr) {
-	// 	t.Error("expected isNotFound(errors.New('command not found')) to return true")
-	// }
-	// otherErr := errors.New("some other error")
-	// if isNotFound(otherErr) {
-	// 	t.Errorf("expected isNotFound to return false for non-not-found error, got true")
-	// }
-
-	// Keep strings import alive for other tests in this file
-	_ = strings.Contains
+	cmdNotFoundErr := errors.New("command not found")
+	if !isNotFound(cmdNotFoundErr) {
+		t.Error("expected isNotFound(errors.New('command not found')) to return true")
+	}
+	otherErr := errors.New("some other error")
+	if isNotFound(otherErr) {
+		t.Errorf("expected isNotFound to return false for non-not-found error, got true")
+	}
 }
