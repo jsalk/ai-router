@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -41,20 +40,27 @@ func TestTruncatePromptExact(t *testing.T) {
 	}
 }
 
-// TestHistoryLogFormat validates the tab-separated log entry format contract.
-// Uses pure format logic (no unimplemented functions). This test defines the
-// expected format that logDispatch must produce in history.go (Wave 2).
+// TestHistoryLogFormat validates the tab-separated log entry format written by logDispatchToPath.
 func TestHistoryLogFormat(t *testing.T) {
-	// Define expected format: timestamp\tprompt\tbackend\n
-	// This mirrors the format logDispatch will produce.
-	timestamp := time.Date(2026, 5, 16, 10, 30, 0, 0, time.UTC).Format(time.RFC3339)
-	promptText := "test prompt"
-	backend := "cc"
+	tmpDir := t.TempDir()
+	logPath := tmpDir + "/history.log"
 
-	logLine := fmt.Sprintf("%s\t%s\t%s\n", timestamp, promptText, backend)
+	entry := HistoryEntry{
+		Timestamp:  time.Date(2026, 5, 16, 10, 30, 0, 0, time.UTC),
+		PromptText: "test prompt",
+		Backend:    "cc",
+	}
+	if err := logDispatchToPath(entry, logPath); err != nil {
+		t.Fatalf("logDispatchToPath returned error: %v", err)
+	}
 
-	// Strip trailing newline before splitting
-	parts := strings.Split(strings.TrimSuffix(logLine, "\n"), "\t")
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("failed to read log file: %v", err)
+	}
+
+	line := strings.TrimSuffix(string(data), "\n")
+	parts := strings.Split(line, "\t")
 	if len(parts) != 3 {
 		t.Errorf("expected 3 tab-separated parts, got %d: %v", len(parts), parts)
 	}
@@ -69,17 +75,19 @@ func TestHistoryLogFormat(t *testing.T) {
 	}
 }
 
-// TestHistoryLogPermissions verifies that 0600 is the correct file permission constant
-// for the history log file. Tests the os.OpenFile + stat flow without calling logDispatch.
+// TestHistoryLogPermissions verifies logDispatchToPath creates the history log with 0600 permissions.
 func TestHistoryLogPermissions(t *testing.T) {
 	tmpDir := t.TempDir()
 	logPath := tmpDir + "/history.log"
 
-	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
+	entry := HistoryEntry{
+		Timestamp:  time.Now(),
+		PromptText: "perm check",
+		Backend:    "cl",
 	}
-	file.Close()
+	if err := logDispatchToPath(entry, logPath); err != nil {
+		t.Fatalf("logDispatchToPath returned error: %v", err)
+	}
 
 	stat, err := os.Stat(logPath)
 	if err != nil {
