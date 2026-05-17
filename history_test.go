@@ -9,48 +9,36 @@ import (
 )
 
 // TestTruncatePromptShort verifies truncatePrompt passes short prompts through unchanged.
-// RED gate: remove t.Skip after Wave 2 implements truncatePrompt in history.go.
 func TestTruncatePromptShort(t *testing.T) {
-	t.Skip("skipping until history.go exists — RED gate: will remove skip and confirm after Wave 2 implements truncatePrompt")
-
-	// Uncomment after history.go exists:
-	// result := truncatePrompt("short prompt", 80)
-	// if result != "short prompt" {
-	// 	t.Errorf("expected %q, got %q", "short prompt", result)
-	// }
+	result := truncatePrompt("short prompt", 80)
+	if result != "short prompt" {
+		t.Errorf("expected %q, got %q", "short prompt", result)
+	}
 }
 
 // TestTruncatePromptLong verifies truncatePrompt truncates and appends ellipsis (…).
-// RED gate: remove t.Skip after Wave 2 implements truncatePrompt in history.go.
 func TestTruncatePromptLong(t *testing.T) {
-	t.Skip("skipping until history.go exists — RED gate: will remove skip and confirm after Wave 2 implements truncatePrompt")
-
-	// Uncomment after history.go exists:
-	// prompt := strings.Repeat("x", 100)
-	// result := truncatePrompt(prompt, 80)
-	// // 80 chars + "…" (1 rune, 3 bytes UTF-8) = 81 runes total
-	// if len([]rune(result)) != 81 {
-	// 	t.Errorf("expected 81 runes, got %d", len([]rune(result)))
-	// }
-	// if !strings.HasSuffix(result, "…") {
-	// 	t.Errorf("expected result to end with '…', got: %q", result)
-	// }
+	prompt := strings.Repeat("x", 100)
+	result := truncatePrompt(prompt, 80)
+	// 80 chars + "…" (1 rune, 3 bytes UTF-8) = 81 runes total
+	if len([]rune(result)) != 81 {
+		t.Errorf("expected 81 runes, got %d", len([]rune(result)))
+	}
+	if !strings.HasSuffix(result, "…") {
+		t.Errorf("expected result to end with '…', got: %q", result)
+	}
 }
 
 // TestTruncatePromptExact verifies truncatePrompt does not truncate a prompt at exactly maxLen runes.
-// RED gate: remove t.Skip after Wave 2 implements truncatePrompt in history.go.
 func TestTruncatePromptExact(t *testing.T) {
-	t.Skip("skipping until history.go exists — RED gate: will remove skip and confirm after Wave 2 implements truncatePrompt")
-
-	// Uncomment after history.go exists:
-	// prompt := strings.Repeat("y", 80)
-	// result := truncatePrompt(prompt, 80)
-	// if result != prompt {
-	// 	t.Errorf("expected prompt unchanged at exactly maxLen, got: %q", result)
-	// }
-	// if strings.HasSuffix(result, "…") {
-	// 	t.Errorf("expected no ellipsis for exact-length prompt, got: %q", result)
-	// }
+	prompt := strings.Repeat("y", 80)
+	result := truncatePrompt(prompt, 80)
+	if result != prompt {
+		t.Errorf("expected prompt unchanged at exactly maxLen, got: %q", result)
+	}
+	if strings.HasSuffix(result, "…") {
+		t.Errorf("expected no ellipsis for exact-length prompt, got: %q", result)
+	}
 }
 
 // TestHistoryLogFormat validates the tab-separated log entry format contract.
