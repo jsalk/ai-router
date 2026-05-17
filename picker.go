@@ -16,14 +16,19 @@ func isNotFound(err error) bool {
 // fzfPicker invokes fzf as a subprocess to let the user select a backend.
 // Returns the backend name selected, or an error on failure.
 // Only healthy backends (healthy[name] == true) are presented in the menu.
-// Menu entries are tab-separated "name\tdescription" so fzf displays only the
-// name column (--with-nth=1) while the full line is returned on selection.
+// Entry format: "name\tname [cost/latency] — description" so fzf displays the
+// rich column (--with-nth=2) while field 0 (the bare name) is used for extraction.
 func fzfPicker(config *Config, healthy map[string]bool) (string, error) {
 	// 1. Build entries for healthy backends only.
 	var entries []string
 	for name, backend := range config.Backends {
 		if healthy[name] {
-			entries = append(entries, fmt.Sprintf("%s\t%s", name, backend.Description))
+			var tier string
+			if backend.CostTier != "" && backend.LatencyTier != "" {
+				tier = fmt.Sprintf(" [%s/%s]", backend.CostTier, backend.LatencyTier)
+			}
+			display := fmt.Sprintf("%s%s — %s", name, tier, backend.Description)
+			entries = append(entries, fmt.Sprintf("%s\t%s", name, display))
 		}
 	}
 
@@ -32,8 +37,9 @@ func fzfPicker(config *Config, healthy map[string]bool) (string, error) {
 		return "", fmt.Errorf("no healthy backends available")
 	}
 
-	// 3. Build fzf command.
-	cmd := exec.Command("fzf", "--with-nth=1", "--delimiter=\t", "--no-sort") // #nosec G204 — fixed args, no user input in command
+	// 3. Build fzf command. --with-nth=2 displays the rich description column;
+	// --nth=1.. filters on all text so typing the backend name still matches.
+	cmd := exec.Command("fzf", "--with-nth=2", "--nth=1..", "--delimiter=\t", "--no-sort") // #nosec G204 — fixed args, no user input in command
 
 	// 4. Acquire stdin/stdout pipes.
 	stdinPipe, err := cmd.StdinPipe()
