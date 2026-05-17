@@ -115,80 +115,68 @@ func TestValidateConfigValid(t *testing.T) {
 }
 
 // TestValidateCostTierInvalid verifies validateConfig rejects an unrecognised cost_tier value.
-// Skipped until CostTier field is added to Backend struct in Wave 1 (config.go).
 func TestValidateCostTierInvalid(t *testing.T) {
-	t.Skip("skip until CostTier field added to Backend struct in Wave 1")
-
-	// Uncomment after config.go adds CostTier to Backend:
-	// cfg := &Config{
-	// 	Backends: map[string]Backend{
-	// 		"cc": {
-	// 			Command:          "claude",
-	// 			HealthCheckType:  "env_var",
-	// 			HealthCheckValue: "ANTHROPIC_API_KEY",
-	// 			CostTier:         "expensive", // INVALID: not in {free, low, medium, high}
-	// 		},
-	// 	},
-	// 	RoutingRules:   []RoutingRule{},
-	// 	DefaultBackend: "cc",
-	// }
-	// err := validateConfig(cfg)
-	// if err == nil {
-	// 	t.Fatal("expected error for invalid cost_tier, got nil")
-	// }
-	// if !strings.Contains(err.Error(), "invalid cost_tier") {
-	// 	t.Errorf("expected error to contain 'invalid cost_tier', got: %v", err)
-	// }
+	cfg := &Config{
+		Backends: map[string]Backend{
+			"cc": {
+				Command:          "claude",
+				HealthCheckType:  "env_var",
+				HealthCheckValue: "ANTHROPIC_API_KEY",
+				CostTier:         "expensive", // INVALID: not in {free, low, medium, high}
+			},
+		},
+		RoutingRules:   []RoutingRule{},
+		DefaultBackend: "cc",
+	}
+	err := validateConfig(cfg)
+	if err == nil {
+		t.Fatal("expected error for invalid cost_tier, got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid cost_tier") {
+		t.Errorf("expected error to contain 'invalid cost_tier', got: %v", err)
+	}
 }
 
 // TestValidateLatencyTierInvalid verifies validateConfig rejects an unrecognised latency_tier value.
-// Skipped until LatencyTier field is added to Backend struct in Wave 1 (config.go).
 func TestValidateLatencyTierInvalid(t *testing.T) {
-	t.Skip("skip until CostTier field added to Backend struct in Wave 1")
-
-	// Uncomment after config.go adds LatencyTier to Backend:
-	// cfg := &Config{
-	// 	Backends: map[string]Backend{
-	// 		"cc": {
-	// 			Command:          "claude",
-	// 			HealthCheckType:  "env_var",
-	// 			HealthCheckValue: "ANTHROPIC_API_KEY",
-	// 			LatencyTier:      "lightning", // INVALID: not in {instant, fast, medium, slow}
-	// 		},
-	// 	},
-	// 	RoutingRules:   []RoutingRule{},
-	// 	DefaultBackend: "cc",
-	// }
-	// err := validateConfig(cfg)
-	// if err == nil {
-	// 	t.Fatal("expected error for invalid latency_tier, got nil")
-	// }
-	// if !strings.Contains(err.Error(), "invalid latency_tier") {
-	// 	t.Errorf("expected error to contain 'invalid latency_tier', got: %v", err)
-	// }
+	cfg := &Config{
+		Backends: map[string]Backend{
+			"cc": {
+				Command:          "claude",
+				HealthCheckType:  "env_var",
+				HealthCheckValue: "ANTHROPIC_API_KEY",
+				LatencyTier:      "lightning", // INVALID: not in {instant, fast, medium, slow}
+			},
+		},
+		RoutingRules:   []RoutingRule{},
+		DefaultBackend: "cc",
+	}
+	err := validateConfig(cfg)
+	if err == nil {
+		t.Fatal("expected error for invalid latency_tier, got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid latency_tier") {
+		t.Errorf("expected error to contain 'invalid latency_tier', got: %v", err)
+	}
 }
 
 // TestValidateTiersMissing verifies that missing cost_tier and latency_tier are not errors.
 // D-06: graceful degradation — backends without tier labels are still valid.
-// Skipped until CostTier/LatencyTier fields are added to Backend struct in Wave 1.
 func TestValidateTiersMissing(t *testing.T) {
-	t.Skip("skip until CostTier field added to Backend struct in Wave 1")
-
-	// Uncomment after config.go adds CostTier/LatencyTier to Backend:
-	// cfg := &Config{
-	// 	Backends: map[string]Backend{
-	// 		"cc": {
-	// 			Command:          "claude",
-	// 			HealthCheckType:  "env_var",
-	// 			HealthCheckValue: "ANTHROPIC_API_KEY",
-	// 			// CostTier and LatencyTier are empty (zero-value) — must not error
-	// 		},
-	// 	},
-	// 	RoutingRules:   []RoutingRule{},
-	// 	DefaultBackend: "cc",
-	// }
-	// err := validateConfig(cfg)
-	// if err != nil {
-	// 	t.Errorf("expected no error for missing tiers (D-06 graceful degradation), got: %v", err)
-	// }
+	cfg := &Config{
+		Backends: map[string]Backend{
+			"cc": {
+				Command:          "claude",
+				HealthCheckType:  "env_var",
+				HealthCheckValue: "ANTHROPIC_API_KEY",
+				// CostTier and LatencyTier are empty (zero-value) — must not error
+			},
+		},
+		RoutingRules:   []RoutingRule{},
+		DefaultBackend: "cc",
+	}
+	err := validateConfig(cfg)
+	if err != nil {
+		t.Errorf("expected no error for missing tiers (D-06 graceful degradation), got: %v", err)
+	}
 }
