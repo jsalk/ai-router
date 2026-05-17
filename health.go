@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -29,6 +30,9 @@ func checkHealth(backend Backend) bool {
 		return resp.StatusCode >= 200 && resp.StatusCode < 300
 	case "env_var":
 		return os.Getenv(backend.HealthCheckValue) != ""
+	case "binary":
+		_, err := exec.LookPath(backend.HealthCheckValue)
+		return err == nil
 	default:
 		return true
 	}
